@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pou x Tomodachi Life Ultimate</title>
+<style>
+body{margin:0;font-family:Arial;background:#f6efe7}
+header{padding:12px;background:#fff;text-align:center;font-weight:bold;position:sticky;top:0}
+#app{padding:10px;padding-bottom:70px}
+.card{background:#fff;border-radius:16px;padding:12px;margin:8px 0;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+nav{position:fixed;bottom:0;left:0;right:0;height:60px;display:flex;background:#fff}
+nav button{flex:1;border:0;background:#fff}
+.bar{height:10px;background:#ddd;border-radius:99px;overflow:hidden}
+.fill{height:100%}
+</style>
+</head>
+<body>
+<header id="hdr">🏢 Ultimate Edition</header>
+<div id="app"></div>
+<nav>
+<button onclick="home()">🏢</button>
+<button onclick="people()">👥</button>
+<button onclick="shop()">🏪</button>
+<button onclick="eventsView()">🎉</button>
+<button onclick="news()">📰</button>
+</nav>
+<script>
+const KEY="PTL_ULTIMATE";
+let g=JSON.parse(localStorage.getItem(KEY)||"null")||{
+coins:5000,last:Date.now(),inventory:[],news:[],
+residents:[{name:"Milo",level:1,hunger:100,thirst:100,hygiene:100,sleep:100,happy:100,birthday:"06-15"}],
+relationships:{}
+};
+function save(){localStorage.setItem(KEY,JSON.stringify(g));}
+function log(t){g.news.unshift(t);g.news=g.news.slice(0,100);save();}
+function decay(){
+ let h=(Date.now()-g.last)/3600000;
+ if(h>0){
+  g.residents.forEach(r=>{
+   r.hunger=Math.max(0,r.hunger-h*12.5);
+   r.thirst=Math.max(0,r.thirst-h*16.6);
+   r.hygiene=Math.max(0,r.hygiene-h*8.3);
+   r.happy=Math.max(0,r.happy-h*10);
+  });
+ }
+ g.last=Date.now(); save();
+}
+function meter(v,c){return `<div class=bar><div class=fill style="width:${v}%;background:${c}"></div></div>`}
+function home(){
+ let h=`<div class=card>💰 ${g.coins} | 👥 ${g.residents.length}</div>`;
+ g.residents.forEach((r,i)=>h+=`<div class=card><b>${r.name}</b> Lv${r.level}
+ ${meter(r.hunger,"orange")} ${meter(r.thirst,"dodgerblue")} ${meter(r.hygiene,"green")} ${meter(r.happy,"gold")}
+ <br><button onclick="feed(${i})">Feed</button>
+ <button onclick="cleanR(${i})">Clean</button></div>`);
+ app.innerHTML=h;
+}
+function feed(i){g.residents[i].hunger=100;g.residents[i].happy=Math.min(100,g.residents[i].happy+10);save();home();}
+function cleanR(i){g.residents[i].hygiene=100;save();home();}
+function people(){
+ app.innerHTML=`<div class=card><input id=n placeholder="Name"><button onclick="addResident()">Add Resident</button></div>`+
+ g.residents.map(r=>`<div class=card>${r.name}<br>🎂 ${r.birthday}</div>`).join("");
+}
+function addResident(){
+ let n=document.getElementById('n').value||("Resident"+(g.residents.length+1));
+ g.residents.push({name:n,level:1,hunger:100,thirst:100,hygiene:100,sleep:100,happy:100,birthday:"01-01"});
+ log("🏠 "+n+" moved in");
+ save();people();
+}
+function shop(){
+ app.innerHTML=`<div class=card>Coins: ${g.coins}</div>
+ <div class=card>🍕 Pizza 50 <button onclick="buy('Pizza',50)">Buy</button></div>
+ <div class=card>👕 Shirt 100 <button onclick="buy('Shirt',100)">Buy</button></div>
+ <div class=card>🛋️ Sofa 200 <button onclick="buy('Sofa',200)">Buy</button></div>`;
+}
+function buy(n,c){if(g.coins<c)return alert("Not enough coins");g.coins-=c;g.inventory.push(n);log("🛒 Bought "+n);save();shop();}
+function eventsView(){
+ let season=["❄️ Winter","🌸 Spring","☀️ Summer","🍂 Autumn"][Math.floor(((new Date().getMonth()+1)%12)/3)];
+ app.innerHTML=`<div class=card>${season}</div>
+ <div class=card><button onclick="party()">Party</button> <button onclick="karaoke()">Karaoke</button></div>`;
+}
+function party(){g.residents.forEach(r=>r.happy=Math.min(100,r.happy+20));log("🎉 Party held");save();}
+function karaoke(){g.coins+=250;log("🎤 Karaoke won 250 coins");save();}
+function news(){app.innerHTML=g.news.map(x=>`<div class=card>${x}</div>`).join("")||"<div class=card>No news</div>";}
+decay();home();
+</script>
+</body>
+</html>
